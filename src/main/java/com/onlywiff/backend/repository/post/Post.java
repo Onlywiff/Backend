@@ -28,6 +28,6 @@ public class Post {
     @JoinColumn(name="replyTo", updatable=false)
     Post replyTo;
 
-    @OneToMany(mappedBy = "replyTo")
+    @OneToMany(mappedBy = "Post", fetch = FetchType.LAZY)
     Set<Post> comments;
 }
