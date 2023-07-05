@@ -6,7 +6,10 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 
+import java.sql.Timestamp;
 import java.util.Set;
 
 @Getter
@@ -23,6 +26,14 @@ public class Post {
     @ManyToOne(optional = false)
     @JoinColumn(name="poster", nullable=false, updatable=false)
     private User user;
+
+    public String content;
+
+    @CreatedDate
+    public Timestamp created;
+
+    @LastModifiedDate
+    public Timestamp lastModified;
 
     @ManyToOne()
     @JoinColumn(name="replyTo", updatable=false)
