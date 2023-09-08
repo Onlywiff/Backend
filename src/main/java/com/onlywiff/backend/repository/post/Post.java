@@ -1,5 +1,6 @@
 package com.onlywiff.backend.repository.post;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.onlywiff.backend.repository.user.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -32,6 +33,7 @@ public class Post {
     @CreatedDate
     public Timestamp created;
 
+    @JsonIgnore
     @LastModifiedDate
     public Timestamp lastModified;
 
@@ -41,4 +43,9 @@ public class Post {
 
     @OneToMany(mappedBy = "Post", fetch = FetchType.LAZY)
     Set<Post> comments;
+
+    boolean isPrivate;
+
+    @JsonIgnore
+    boolean isDeleted;
 }

@@ -1,13 +1,22 @@
 package com.onlywiff.backend.controller.users;
 
 import com.onlywiff.backend.api.GenericObjectResponse;
+import com.onlywiff.backend.api.GenericResponse;
+import com.onlywiff.backend.api.request.GenericValueRequest;
+import com.onlywiff.backend.api.request.UserLoginRequest;
+import com.onlywiff.backend.api.request.UserMFARequest;
 import com.onlywiff.backend.api.request.UserRegisterRequest;
+import com.onlywiff.backend.repository.session.Session;
 import com.onlywiff.backend.repository.user.User;
 import com.onlywiff.backend.repository.user.UserRepository;
+import com.onlywiff.backend.service.SessionService;
+import com.onlywiff.backend.service.UserManagerService;
+import com.onlywiff.backend.service.mfa.MFAManagerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
@@ -16,39 +25,52 @@ import reactor.core.publisher.Mono;
 @RequestMapping(value = "/api/user", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 public class UserController {
 
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+    final SessionService sessionService;
+    final MFAManagerService mfaManagerService;
+    private final UserManagerService userManagerService;
 
     @Autowired
-    public UserController(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
+    public UserController(SessionService sessionService,
+                          MFAManagerService mfaManagerService,
+                          UserManagerService userManagerService) {
+        this.sessionService = sessionService;
+        this.mfaManagerService = mfaManagerService;
+        this.userManagerService = userManagerService;
     }
 
-    public Mono<GenericObjectResponse<User>> register(@RequestBody UserRegisterRequest userRegisterRequest) {
-        return userRepository.existsByUsername(userRegisterRequest.name()).flatMap(exists -> {
-            if (exists) {
-                return Mono.just(new GenericObjectResponse<>(false, null,"Username already exists"));
-            } else {
-                return userRepository.existsByEmail(userRegisterRequest.email()).flatMap(exists2 -> {
-                    if (exists2) {
-                        return Mono.just(new GenericObjectResponse<>(false, null,"Email already exists"));
-                    } else {
-                        return userRepository.save(new User(userRegisterRequest.name(), userRegisterRequest.displayName(), userRegisterRequest.email(), passwordEncoder.encode(userRegisterRequest.password())))
-                                .flatMap(user -> Mono.just(new GenericObjectResponse<>(true, user, "User registered successfully")));
-                    }
-                });
-            }
-        });
+    @RequestMapping(value = "/register")
+    public Mono<GenericObjectResponse<Session>> register(@RequestBody UserRegisterRequest userRegisterRequest) {
+        return userManagerService.register(userRegisterRequest.name(),
+                userRegisterRequest.displayName(), userRegisterRequest.email(), userRegisterRequest.password());
     }
 
-    public Mono<GenericObjectResponse<?>> login(@RequestBody UserRegisterRequest userRegisterRequest) {
-        return userRepository.getUserByUsername(userRegisterRequest.name()).flatMap(user -> {
-            if (passwordEncoder.matches(userRegisterRequest.password(), user.getPassword())) {
-                return Mono.just(new GenericObjectResponse<>(true, user, "User logged in successfully"));
-            } else {
-                return Mono.just(new GenericObjectResponse<>(false, null, "Incorrect password"));
-            }
-        }).switchIfEmpty(Mono.just(new GenericObjectResponse<>(false, null, "User not found")));
+    @RequestMapping(value = "/login")
+    public Mono<GenericObjectResponse<Session>> login(@RequestBody UserLoginRequest userLoginRequest) {
+        return userManagerService.login(userLoginRequest.name(), userLoginRequest.password());
+    }
+
+    @RequestMapping(value = "/mfa/login")
+    public Mono<GenericObjectResponse<Session>> mfaLogin(@RequestHeader(name = "Authorization") String sessionToken, @RequestBody GenericValueRequest genericValueRequest) {
+        return userManagerService.mfaLogin(sessionToken, genericValueRequest.value());
+    }
+
+    @RequestMapping(value = "/verifyemail")
+    public Mono<GenericResponse> verifyEmail(@RequestHeader(name = "Authorization") String sessionToken, @RequestBody GenericValueRequest genericValueRequest) {
+        return userManagerService.verifyEmail(sessionToken, genericValueRequest.value());
+    }
+
+    @RequestMapping(value = "/mfa/activate")
+    public Mono<GenericResponse> mfaActivate(@RequestHeader(name = "Authorization") String sessionToken, @RequestBody GenericValueRequest genericValueRequest) {
+        return userManagerService.mfaActivate(sessionToken, genericValueRequest.value());
+    }
+
+    @RequestMapping(value = "/mfa/request")
+    public Mono<UserMFARequest> mfaRequest(@RequestHeader(name = "Authorization") String sessionToken) {
+        return userManagerService.mfaRequest(sessionToken);
+    }
+
+    @RequestMapping(value = "/mfa/deactivate")
+    public Mono<GenericResponse> mfaDeactivate(@RequestHeader(name = "Authorization") String sessionToken, @RequestBody GenericValueRequest genericValueRequest) {
+        return userManagerService.mfaDisable(sessionToken, genericValueRequest.value());
     }
 }

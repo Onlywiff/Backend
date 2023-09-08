@@ -9,6 +9,7 @@ import dev.samstevens.totp.secret.SecretGenerator;
 import dev.samstevens.totp.util.Utils;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 @Service("mfaManagerService")
 public class MFAManagerService implements IMFAManagerService {
@@ -28,7 +29,7 @@ public class MFAManagerService implements IMFAManagerService {
     }
 
     @Override
-    public String getQRCode(String secret, String email) throws QrGenerationException {
+    public Mono<String> getQRCode(String secret, String email) throws QrGenerationException {
         QrData data = new QrData.Builder()
                 .label("OnlyWiff - " + email)
                 .secret(secret)
@@ -37,14 +38,14 @@ public class MFAManagerService implements IMFAManagerService {
                 .digits(6)
                 .period(30)
                 .build();
-        return Utils.getDataUriForImage(
+        return Mono.just(Utils.getDataUriForImage(
                 qrGenerator.generate(data),
                 qrGenerator.getImageMimeType()
-        );
+        )).onErrorReturn("");
     }
 
     @Override
-    public boolean verifyCode(String code, String secret) {
-        return codeVerifier.isValidCode(secret, code);
+    public Mono<Boolean> verifyCode(String code, String secret) {
+        return Mono.just(codeVerifier.isValidCode(secret, code)).onErrorReturn(false);
     }
 }

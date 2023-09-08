@@ -16,6 +16,7 @@ import lombok.*;
 public class User {
 
     @Id
+    @JsonIgnore
     @GeneratedValue
     private Long id;
 
@@ -35,16 +36,27 @@ public class User {
     @Column(unique = true)
     private String email;
 
-    private boolean accountVerified;
+    @JsonIgnore
+    private boolean emailVerified;
 
+    private UserTyp accountVerification = UserTyp.NON_VERIFIED;
+
+    @JsonIgnore
     private int failedLoginAttempts;
 
+    @JsonIgnore
     private boolean loginDisabled;
 
     @JsonIgnore
     private String mfaSecret;
 
+    @JsonIgnore
     private boolean mfaEnabled;
 
     private boolean isPublic;
+
+    public void enableMFA(String secret) {
+        mfaSecret = secret;
+        mfaEnabled = true;
+    }
 }
