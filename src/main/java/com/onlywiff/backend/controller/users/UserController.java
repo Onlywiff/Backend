@@ -54,7 +54,7 @@ public class UserController {
         return userManagerService.mfaLogin(sessionToken, genericValueRequest.value());
     }
 
-    @RequestMapping(value = "/verifyemail")
+    @RequestMapping(value = "/verify")
     public Mono<GenericResponse> verifyEmail(@RequestHeader(name = "Authorization") String sessionToken, @RequestBody GenericValueRequest genericValueRequest) {
         return userManagerService.verifyEmail(sessionToken, genericValueRequest.value());
     }
