@@ -2,18 +2,21 @@ package com.onlywiff.backend.repository.user;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
 import lombok.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.domain.Persistable;
+import org.springframework.data.r2dbc.config.EnableR2dbcAuditing;
+import org.springframework.data.relational.core.mapping.Table;
 
+@Table
 @Getter
 @Setter
-@Entity
 @NoArgsConstructor
 @AllArgsConstructor
+@EnableR2dbcAuditing
 @RequiredArgsConstructor
-public class User {
+public class User implements Persistable<Long> {
 
     @Id
     @JsonIgnore
@@ -53,10 +56,16 @@ public class User {
     @JsonIgnore
     private boolean mfaEnabled;
 
-    private boolean isPublic;
+    private boolean isPublic = true;
 
     public void enableMFA(String secret) {
         mfaSecret = secret;
         mfaEnabled = true;
+    }
+
+    @JsonIgnore
+    @Override
+    public boolean isNew() {
+        return id == null || id == 0;
     }
 }

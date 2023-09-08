@@ -21,13 +21,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
-@RestController()
+@RestController
 @RequestMapping(value = "/api/user", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
 public class UserController {
 
-    final SessionService sessionService;
-    final MFAManagerService mfaManagerService;
-    private final UserManagerService userManagerService;
+    SessionService sessionService;
+    MFAManagerService mfaManagerService;
+    UserManagerService userManagerService;
 
     @Autowired
     public UserController(SessionService sessionService,
@@ -72,5 +72,16 @@ public class UserController {
     @RequestMapping(value = "/mfa/deactivate")
     public Mono<GenericResponse> mfaDeactivate(@RequestHeader(name = "Authorization") String sessionToken, @RequestBody GenericValueRequest genericValueRequest) {
         return userManagerService.mfaDisable(sessionToken, genericValueRequest.value());
+    }
+
+    @RequestMapping(value = "/get")
+    public Mono<GenericObjectResponse<User>> get(@RequestHeader(name = "Authorization") String sessionToken, @RequestBody GenericValueRequest genericValueRequest) {
+        return userManagerService.getUser(sessionToken, genericValueRequest.value());
+    }
+
+    @RequestMapping(value = "/test")
+    public Mono<GenericObjectResponse<Session>> test(@RequestBody UserRegisterRequest userRegisterRequest) {
+        return userManagerService.test(userRegisterRequest.name(),
+                userRegisterRequest.displayName(), userRegisterRequest.email(), userRegisterRequest.password());
     }
 }
